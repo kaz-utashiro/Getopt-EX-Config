@@ -42,7 +42,8 @@
       },
       "runtime" : {
          "requires" : {
-            "perl" : "5.008001"
+            "Getopt::EX" : "v2.2.1",
+            "perl" : "5.014"
          }
       },
       "test" : {
