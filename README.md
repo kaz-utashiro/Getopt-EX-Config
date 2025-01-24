@@ -1,4 +1,4 @@
-
+[![Actions Status](https://github.com/kaz-utashiro/Getopt-EX-Config/workflows/test/badge.svg)](https://github.com/kaz-utashiro/Getopt-EX-Config/actions) [![MetaCPAN Release](https://badge.fury.io/pl/Getopt-EX-Config.svg)](https://metacpan.org/release/Getopt-EX-Config)
 # NAME
 
 Getopt::EX::Config - Getopt::EX module configuration interface
@@ -15,7 +15,7 @@ Getopt::EX::Config - Getopt::EX module configuration interface
 
 # VERSION
 
-Version 0.01
+Version 0.99
 
 # DESCRIPTION
 

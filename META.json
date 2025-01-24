@@ -53,7 +53,18 @@
       }
    },
    "release_status" : "unstable",
-   "version" : "0.01",
+   "resources" : {
+      "bugtracker" : {
+         "web" : "https://github.com/kaz-utashiro/Getopt-EX-Config/issues"
+      },
+      "homepage" : "https://github.com/kaz-utashiro/Getopt-EX-Config",
+      "repository" : {
+         "type" : "git",
+         "url" : "https://github.com/kaz-utashiro/Getopt-EX-Config.git",
+         "web" : "https://github.com/kaz-utashiro/Getopt-EX-Config"
+      }
+   },
+   "version" : "0.99",
    "x_contributors" : [
       "Kazumasa Utashiro <kaz@utashiro.com>"
    ],
