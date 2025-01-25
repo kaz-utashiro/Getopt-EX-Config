@@ -3,7 +3,7 @@ package Getopt::EX::Config;
 use v5.14;
 use warnings;
 
-our $VERSION = '0.99';
+our $VERSION = '0.9901';
 
 use Exporter 'import';
 our @EXPORT = qw(&config);
@@ -100,7 +100,7 @@ Getopt::EX::Config - Getopt::EX module configuration interface
 
 =head1 VERSION
 
-Version 0.99
+Version 0.9901
 
 =head1 DESCRIPTION
 
