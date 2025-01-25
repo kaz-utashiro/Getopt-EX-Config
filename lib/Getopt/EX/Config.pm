@@ -14,12 +14,12 @@ Getopt::Long::Configure qw(bundling);
 
 use List::Util qw(first);
 
-our $config;
+our %CONFIG;
 
 sub new {
     my $class = shift;
-    $config = ref $_[0] eq 'HASH' ? shift : { @_ };
-    bless $config, $class;
+    my $config = ref $_[0] eq 'HASH' ? shift : { @_ };
+    $CONFIG{caller} = bless $config, $class;
 }
 
 sub deal_with {
@@ -34,13 +34,17 @@ sub deal_with {
 sub config {
     while (my($k, $v) = splice @_, 0, 2) {
 	my @names = split /\./, $k;
-	my $c = $config // die "config is not initialized.\n";
+	my $c = $CONFIG{caller} // die "config is not initialized.\n";
 	my $name = pop @names;
 	for (@names) {
 	    $c = $c->{$_} // die "$k: invalid name.\n";
 	}
 	exists $c->{$name} or die "$k: invalid name.\n";
-	$c->{$name} = $v;
+	if (ref $c->{$name}) {
+	    ${$c->{$name}} = $v;
+	} else {
+	    $c->{$name} = $v;
+	}
     }
     ();
 }
