@@ -31,6 +31,7 @@ only for the module and to define module-specific command options.
 
 You can create config object like this:
 
+    use Getopt::EX::Config;
     my $config = Getopt::EX::Config->new(
         char  => 0,
         width => 0,
