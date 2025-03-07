@@ -102,6 +102,32 @@ for detail.
         );
     }
 
+# FUNCTIONS
+
+- **config**(_key_ => _value_, ...)
+
+    This module exports the function `config` by default.  As explained
+    above, this is why the `config` function can be executed with module
+    declaration.
+
+    If you want to use a function with a different name, specify it
+    explicitly.  In the following example, the function `set` is defined
+    and can be used in the same way as `config`.
+
+        use Getopt::EX::Config qw(config set);
+
+- **config**(_key_)
+
+    The `config` function may also be used to refer parameters in the
+    program.  In this case, specify single argument.
+
+        my $width = config('width');
+
+    Parameter value references can also be used as left-hand side values,
+    so values can be assigned.
+
+        config('width') = 42;
+
 # METHODS
 
 - **new**(_key-value list_)
