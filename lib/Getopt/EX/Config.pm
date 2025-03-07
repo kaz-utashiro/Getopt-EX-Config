@@ -3,7 +3,7 @@ package Getopt::EX::Config;
 use v5.14;
 use warnings;
 
-our $VERSION = '0.9903';
+our $VERSION = '0.9904';
 
 use Data::Dumper;
 use Getopt::Long qw(GetOptionsFromArray);
@@ -141,7 +141,7 @@ Getopt::EX::Config - Getopt::EX module configuration interface
 
 =head1 VERSION
 
-Version 0.9903
+Version 0.9904
 
 =head1 DESCRIPTION
 
