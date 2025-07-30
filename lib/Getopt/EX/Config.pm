@@ -3,7 +3,7 @@ package Getopt::EX::Config;
 use v5.14;
 use warnings;
 
-our $VERSION = '0.9904';
+our $VERSION = '0.9905';
 
 our $REPLACE_UNDERSCORE = 1;
 
@@ -148,7 +148,7 @@ Getopt::EX::Config - Getopt::EX module configuration interface
 
 =head1 VERSION
 
-Version 0.9904
+Version 0.9905
 
 =head1 DESCRIPTION
 
