@@ -16,7 +16,7 @@ import sys
 
 class GetoptAnalyzer:
     """Perlコードのgetoptパターンを解析するクラス"""
-    
+
     def __init__(self):
         self.patterns = {
             'use_getopt_long': r'use\s+Getopt::Long\b(?:\s+qw\([^)]*\))?',
@@ -24,11 +24,15 @@ class GetoptAnalyzer:
             'use_getopt_ex_config': r'use\s+Getopt::EX::Config\b(?:\s+qw\([^)]*\))?',
             'set_function': r'sub\s+set\s*\{',
             'setopt_function': r'sub\s+setopt\s*\{',
+            'option_function': r'sub\s+option\s*\{',  # optex style option function
             'config_new': r'Getopt::EX::Config\s*->\s*new\b',
             'deal_with_call': r'(?:\$\w+\s*->\s*)?deal_with\s*\(',
+            'initialize_function': r'sub\s+initialize\s*\{',  # optex module pattern
             'finalize_function': r'sub\s+finalize\s*\{',
             'opt_hash_usage': r'\$opt\s*\{[^}]+\}',
+            'option_hash_usage': r'\$option\s*\{[^}]+\}',  # %option pattern
             'our_opt': r'our\s+%opt\b',
+            'our_option': r'our\s+%option\b',  # our %option pattern
             'getoptions_call': r'GetOptions(?:FromArray)?\s*\(',
             'option_spec': r'["\']([\w\-\|!+=:@%]+)["\']',
             'module_declaration': r'package\s+([\w:]+)',
@@ -79,6 +83,27 @@ class GetoptAnalyzer:
             if not clean_key.startswith('$') and clean_key.isidentifier():
                 clean_opt_keys.append(clean_key)
         analysis['opt_keys'] = list(set(clean_opt_keys))  # 重複を除去
+
+        # %optionハッシュの使用パターンを抽出
+        option_usages = re.findall(r'\$option\s*\{([^}]+)\}', code)
+        clean_option_keys = []
+        for key in option_usages:
+            clean_key = key.strip('\'"')
+            if not clean_key.startswith('$') and clean_key.isidentifier():
+                clean_option_keys.append(clean_key)
+        analysis['option_keys'] = list(set(clean_option_keys))
+
+        # our %option = (...) からデフォルト値付きのキーを抽出
+        our_option_match = re.search(
+            r'our\s+%option\s*=\s*\((.*?)\)\s*;',
+            code,
+            re.MULTILINE | re.DOTALL
+        )
+        if our_option_match:
+            option_def = our_option_match.group(1)
+            # キー => 値 のパターンを抽出
+            option_pairs = re.findall(r'(\w+)\s*=>\s*([^,\)]+)', option_def)
+            analysis['option_defaults'] = {k.strip(): v.strip() for k, v in option_pairs}
         
         # 移行の複雑さを評価（モジュール設定の観点から）
         complexity_score = 0
@@ -252,6 +277,18 @@ class MigrationGuide:
         
         if analysis.get('set_function') or analysis.get('setopt_function'):
             guidance.append("✓ 既存のset/setopt関数を検出")
+
+        if analysis.get('option_function'):
+            guidance.append("✓ 既存のoption関数を検出（optexモジュールパターン）")
+
+        if analysis.get('our_option'):
+            guidance.append("✓ our %option パターンを検出")
+            option_defaults = analysis.get('option_defaults', {})
+            if option_defaults:
+                guidance.append(f"   設定項目: {', '.join(option_defaults.keys())}")
+
+        if analysis.get('initialize_function'):
+            guidance.append("✓ initialize関数を検出（optexモジュール）")
         
         if analysis.get('use_getopt_long'):
             guidance.append("⚠ Getopt::Longの依存関係を整理する必要があります")
@@ -369,22 +406,36 @@ class MigrationGuide:
     def generate_migration_code(analysis: Dict[str, Any], original_code: str) -> str:
         """移行後のコード例を生成"""
         code_parts = []
-        
+
+        # optexモジュールパターンの検出
+        is_optex_module = analysis.get('initialize_function') or analysis.get('option_function')
+
         code_parts.append("# Getopt::EX::Config移行版")
-        code_parts.append("use Getopt::EX::Config qw(config set);")
+        code_parts.append("use Getopt::EX::Config;")
         code_parts.append("")
-        
+
         # 設定オブジェクト（実際のオプションから生成）
         code_parts.append("my $config = Getopt::EX::Config->new(")
-        
+
         module_options = analysis.get('module_specific_options', [])
         opt_keys = analysis.get('opt_keys', [])
-        
-        if module_options:
+        option_keys = analysis.get('option_keys', [])
+        option_defaults = analysis.get('option_defaults', {})
+
+        # our %option = (...) から検出した場合を優先
+        if option_defaults:
+            code_parts.append("    # %optionから検出した設定項目")
+            for key, value in option_defaults.items():
+                code_parts.append(f"    {key} => {value},")
+        elif module_options:
             code_parts.append("    # モジュール固有オプションのデフォルト値")
             for opt in module_options:
                 default_val = MigrationGuide._get_default_value(opt['type'])
                 code_parts.append(f"    {opt['primary_name']} => {default_val},")
+        elif option_keys:
+            code_parts.append("    # $option{...}から検出した設定項目")
+            for key in option_keys:
+                code_parts.append(f"    {key} => 0,")
         elif opt_keys:
             code_parts.append("    # 検出された設定項目のデフォルト値")
             processed_keys = set()
@@ -396,33 +447,51 @@ class MigrationGuide:
         else:
             code_parts.append("    # デフォルト値を設定")
             code_parts.append("    debug => 0,")
-            code_parts.append("    width => 80,")
-        
+
         code_parts.append(");")
         code_parts.append("")
-        
-        # finalize関数
-        code_parts.append("sub finalize {")
-        code_parts.append("    our($mod, $argv) = @_;")
-        code_parts.append("    $config->deal_with($argv,")
-        
+
+        # optexモジュールの場合はinitialize/finalizeパターン
+        if is_optex_module:
+            code_parts.append("my($mod, $argv);")
+            code_parts.append("sub initialize { ($mod, $argv) = @_ }")
+            code_parts.append("")
+            code_parts.append("sub finalize {")
+            code_parts.append("    $config->deal_with($argv,")
+        else:
+            code_parts.append("sub finalize {")
+            code_parts.append("    our($mod, $argv) = @_;")
+            code_parts.append("    $config->deal_with($argv,")
+
         # モジュールオプションの仕様を記述
-        if module_options:
+        if option_defaults:
+            code_parts.append("        # %optionから検出した設定項目:")
+            for key in option_defaults.keys():
+                code_parts.append(f"        '{key}!',")
+        elif module_options:
             code_parts.append("        # モジュール固有オプションのみを定義:")
             for opt in module_options:
                 code_parts.append(f"        \"{opt['spec']}\",")
+        elif option_keys:
+            code_parts.append("        # $option{...}から検出した設定項目:")
+            for key in option_keys:
+                code_parts.append(f"        '{key}!',")
         elif opt_keys:
             code_parts.append("        # 検出された設定項目に基づくオプション仕様:")
-            for key in opt_keys[:3]:
+            for key in opt_keys[:5]:
                 clean_key = key.strip('\'"')
                 if clean_key.isidentifier() and not clean_key.startswith('$'):
-                    code_parts.append(f"        \"{clean_key}!\",")
+                    code_parts.append(f"        '{clean_key}!',")
         else:
             code_parts.append("        # 例: 実際の設定項目に置き換えてください")
-            code_parts.append("        \"debug!\",")
-            code_parts.append("        \"width=i\",")
-        code_parts.append("        # 必要に応じて追加の設定項目")
+            code_parts.append("        'debug!',")
         code_parts.append("    );")
+
+        # optexモジュールの場合、finalize内での処理例を追加
+        if is_optex_module:
+            code_parts.append("    # finalizeで処理を実行")
+            code_parts.append("    # 例: some_processing() if $config->{all};")
+
         code_parts.append("}")
         code_parts.append("")
         
@@ -657,27 +726,41 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
 === Getopt::EX::Config 移行パターン集 ===
 
 1. 基本的な移行パターン:
-   Before: use Getopt::Long; sub set { ... }
-   After:  use Getopt::EX::Config qw(config set);
+   Before: our %option = (...); sub option { ... }
+   After:  use Getopt::EX::Config;
+           my $config = Getopt::EX::Config->new(...);
 
 2. モジュール設定方法の選択肢:
-   • greple -Mfoo::config=width=80     # Config記法
-   • greple -Mfoo::set=width=80        # 従来記法（互換）  
-   • greple -Mfoo --width=80 -- args   # 直接モジュールオプション
+   • optex -Mfoo::config=width=80     # Config記法
+   • optex -Mfoo --width=80 -- args   # 直接モジュールオプション
 
-3. Boolean値の扱い:
-   • 設定: debug => 1
-   • モジュールオプション: --debug / --no-debug
-   • deal_with: "debug!"
+3. optexモジュールのパターン:
+   my($mod, $argv);
+   sub initialize { ($mod, $argv) = @_ }
+   sub finalize {
+       $config->deal_with($argv, 'all!', 'verbose!');
+       process() if $config->{all};
+   }
 
-4. 成功事例:
-   • App::Greple::pw: 豊富なオプション、3つの設定方式対応
-   • 後方互換性を保ちながら新機能を追加
+4. Boolean値の扱い:
+   • 設定: all => 1, verbose => 0
+   • CLI: --all / --no-all, --verbose
+   • deal_with: 'all!', 'verbose!'
 
-5. よくある注意点:
-   • finalize()内でdeal_with()を呼び出す
-   • 設定名とCLI名の命名規則統一
-   • 既存のset関数は削除可能
+5. 成功事例:
+   • App::optex::rpn: %optionパターンからの移行
+     Before: our %option = (debug => 0, verbose => 0);
+             sub option { while (my($k,$v) = splice @_,0,2) {...} }
+     After:  my $config = Getopt::EX::Config->new(all => 1, verbose => 0);
+             sub finalize { $config->deal_with($argv, 'all!', 'verbose!'); }
+
+   • App::Greple::pw: 豊富なオプション、複数の設定方式対応
+
+6. よくある注意点:
+   • finalize()内でdeal_with()を呼び出す（オプション処理後に実行）
+   • initialize()で$mod, $argvを保存
+   • $config->{key}で設定値にアクセス
+   • 既存のoption/set関数は削除可能
         """
         
             return [TextContent(type="text", text=patterns)]
