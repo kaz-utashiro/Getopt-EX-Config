@@ -65,7 +65,7 @@ sub getopt {
     GetOptionsFromArray(
 	$argv,
 	$obj,
-	"config|C=s" => sub {
+	"config=s" => sub {
 	    $obj->config(arg2kvlist($_[1]));
 	},
 	@_
