@@ -33,6 +33,9 @@ sub new {
     for my $key (keys %$config) {
         $key =~ /^[a-zA-Z]/ or die "$key: config key must start with a letter\n";
     }
+    # Initialize internal keys for lock_keys compatibility
+    $config->{_argv} = [];
+    $config->{_configure} = [];
     my $caller = caller;
     $CONFIG{$caller} = bless $config, $class;
     $config;
@@ -318,6 +321,7 @@ Or call with hash reference.
     my $config = Getopt::EX::Config->new(\%config);
 
 In this case, C<\%config> and C<$config> should be identical.
+Do not apply C<lock_keys> to the hash before calling C<new>.
 
 Config keys must start with a letter (a-z, A-Z).  Keys starting with
 underscore or other characters are reserved for internal use.

@@ -160,6 +160,7 @@ for detail.
         my $config = Getopt::EX::Config->new(\%config);
 
     In this case, `\%config` and `$config` should be identical.
+    Do not apply `lock_keys` to the hash before calling `new`.
 
     Config keys must start with a letter (a-z, A-Z).  Keys starting with
     underscore or other characters are reserved for internal use.
