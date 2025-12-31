@@ -75,6 +75,9 @@ sub getopt {
     my $argv = shift // [];
     return if @{ $argv } == 0;
 
+    # Filter out internal keys (must start with a letter)
+    @_ = grep { ref($_) || /^[a-zA-Z]/ } @_;
+
     # Convert underscore options to underscore|dash format
     @_ = map { ref($_) ? $_ : s/^(\w*_[\w_]*)/"$1|" . ($1 =~ s:_:-:gr)/er } @_
         if $REPLACE_UNDERSCORE;
