@@ -15,7 +15,7 @@ Getopt::EX::Config - Getopt::EX module configuration interface
 
 # VERSION
 
-Version 1.0201
+Version 1.0202
 
 # DESCRIPTION
 
@@ -286,7 +286,7 @@ The following copyright notice applies to all the files provided in
 this distribution, including binary files, unless explicitly noted
 otherwise.
 
-Copyright ©︎ 2025 Kazumasa Utashiro
+Copyright ©︎ 2025-2026 Kazumasa Utashiro
 
 # LICENSE
 

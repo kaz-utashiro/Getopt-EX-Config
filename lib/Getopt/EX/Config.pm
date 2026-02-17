@@ -3,7 +3,7 @@ package Getopt::EX::Config;
 use v5.14;
 use warnings;
 
-our $VERSION = '1.0201';
+our $VERSION = '1.0202';
 
 our $REPLACE_UNDERSCORE = 1;
 
@@ -172,7 +172,7 @@ Getopt::EX::Config - Getopt::EX module configuration interface
 
 =head1 VERSION
 
-Version 1.0201
+Version 1.0202
 
 =head1 DESCRIPTION
 
@@ -457,7 +457,7 @@ The following copyright notice applies to all the files provided in
 this distribution, including binary files, unless explicitly noted
 otherwise.
 
-Copyright ©︎ 2025 Kazumasa Utashiro
+Copyright ©︎ 2025-2026 Kazumasa Utashiro
 
 =head1 LICENSE
 
