@@ -107,8 +107,9 @@ sub config {
 ######################################################################
 
 sub set {
-    my $c = shift;
+    my $obj = shift;
     while (my($k, $v) = splice @_, 0, 2) {
+	my $c = $obj;
 	my @names = split /\./, $k;
 	my $name = pop @names;
 	for (@names) {
@@ -253,6 +254,54 @@ value is that the hash object is passed when calling the
 C<Getopt::Long> library.  The above code is equivalent to the
 following code.  See L<Getopt::Long/Storing options values in a hash>
 for detail.
+
+=head2 Nested Hash Configuration
+
+Config values can be hash references for structured configuration:
+
+    my $config = Getopt::EX::Config->new(
+        mode   => '',
+        hashed => { h3 => 0, h4 => 0, h5 => 0, h6 => 0 },
+    );
+
+Nested values can be accessed using dot notation in the C<config()>
+function:
+
+    example -Mfoo::config(hashed.h3=1,hashed.h4=1) ...
+
+    example -Mfoo --config hashed.h3=1 -- ...
+
+The dot notation navigates into nested hashes: C<hashed.h3=1> sets
+C<< $config->{hashed}{h3} >> to C<1>.  The intermediate key
+(C<hashed>) must exist as a hash reference, and the leaf key (C<h3>)
+must already exist in that hash.
+
+Hash options can also be defined as module private options using
+L<Getopt::Long> hash type (C<%>):
+
+    $config->deal_with($argv, "hashed=s%");
+
+This allows:
+
+    example -Mfoo --hashed h3=1 --hashed h4=1 -- ...
+
+Note that the C<Getopt::Long> hash type auto-vivifies keys, so
+C<--hashed h3=1> works even when C<h3> does not pre-exist in the hash.
+
+The dot notation and nested hash support are designed with future
+extensibility in mind.  For example, a configuration file under
+F<~/.config> could store module settings in YAML-like format:
+
+    # ~/.config/example/foo.yml
+    mode: dark
+    hashed:
+      h3: 1
+      h4: 1
+      h5: 1
+      h6: 1
+
+This would map naturally to the nested hash structure and dot notation
+already supported by this module.
 
     sub finalize {
         our($mod, $argv) = @_;
